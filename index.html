@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demon's Crest Password Generator</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <style>
+    :root {
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-tight: 0.15rem;
+      --space-micro: 0.1rem;
+      --bg: #121212;
+      --surface: #1e1e1e;
+      --border: #333;
+      --text: #e8e8e8;
+      --muted: #aaa;
+      --accent: #8b7355;
+      --hover-bg: #252525;
+      --active-bg: #2a2a2a;
+      --selected: #2a2a2a;
+      --selected-border: #c9a227;
+      --focus-ring: var(--accent);
+      --focus-ring-selected: #e8d48b;
+      --radius-sm: 3px;
+      --radius-md: 4px;
+      --radius-lg: 5px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    header {
+      text-align: center;
+      padding: var(--space-3) var(--space-4) var(--space-1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .password-area {
+      text-align: center;
+      margin: var(--space-3) auto var(--space-2);
+    }
+
+    .password-grid {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 2.1rem;
+      font-weight: 600;
+      letter-spacing: 0.35em;
+      line-height: 1.45;
+      white-space: pre;
+      cursor: text;
+      min-width: 6em;
+    }
+
+    .password-grid.placeholder {
+      color: var(--muted);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-2);
+      margin: var(--space-2) 0;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    button {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: var(--space-2) var(--space-3);
+      font-size: 0.85rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #generate,
+    #copy {
+      min-width: 8em;
+    }
+
+    #select-all,
+    #select-all-bosses,
+    #deselect-all {
+      min-width: 16em;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 1px;
+    }
+
+    button:active {
+      background: var(--active-bg);
+    }
+
+    .selectors {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: 0 var(--space-2) var(--space-4);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .selectors > .column,
+    .selectors > .stack {
+      flex: 0 1 190px;
+      max-width: 210px;
+    }
+
+    .selectors > .column.clear-souls {
+      flex: 0 1 520px;
+      max-width: 540px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .column {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .column h2 {
+      margin: 0 0 var(--space-1);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.03em;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      width: 100%;
+      padding: var(--space-tight) var(--space-2);
+      margin: var(--space-micro) 0;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .item:hover {
+      background: var(--hover-bg);
+      border-color: transparent;
+    }
+
+    .item.selected:hover {
+      border-color: var(--selected-border);
+    }
+
+    .item:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 1px;
+      border-color: transparent;
+    }
+
+    .item.selected {
+      background: var(--selected);
+      border-color: var(--selected-border);
+    }
+
+    .item.selected:focus-visible {
+      outline: 2px solid var(--focus-ring-selected);
+      outline-offset: 1px;
+      border-color: var(--selected-border);
+    }
+
+    .item img {
+      width: 20px;
+      height: 20px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+
+    .item span {
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .clear-souls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(8, auto);
+      grid-auto-flow: column;
+      gap: var(--space-micro) var(--space-2);
+    }
+
+    @media (max-width: 700px) {
+      .password-grid {
+        font-size: 1.6rem;
+        letter-spacing: 0.2em;
+      }
+
+      #select-all,
+      #select-all-bosses,
+      #deselect-all {
+        min-width: 0;
+        width: 100%;
+        max-width: 20rem;
+      }
+
+      .item {
+        padding: var(--space-2) var(--space-2);
+      }
+
+      .selectors > .column,
+      .selectors > .stack,
+      .selectors > .column.clear-souls {
+        flex: 1 1 100%;
+        max-width: 100%;
+      }
+
+      .clear-souls-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+        grid-auto-flow: row;
+      }
+    }
+
+    @media (forced-colors: active) {
+      .column,
+      button,
+      .item {
+        border-color: CanvasText;
+      }
+
+      .item.selected {
+        border-color: Highlight;
+        background: transparent;
+      }
+
+      button:focus-visible,
+      .item:focus-visible,
+      .item.selected:focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+      }
+
+      .password-grid {
+        color: CanvasText;
+      }
+
+      .password-grid.placeholder {
+        color: GrayText;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Demon's Crest Password Generator</h1>
+  </header>
+
+  <main>
+    <div class="password-area" role="region" aria-label="Generated password">
+      <div class="password-grid" id="password-grid" aria-hidden="true"></div>
+      <div id="password-announcement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+    <div class="controls">
+      <div class="control-row">
+        <button type="button" id="generate">Generate</button>
+        <button type="button" id="copy">Copy</button>
+      </div>
+      <div class="control-row">
+        <button type="button" id="select-all">Select All (Normal Mode)</button>
+        <button type="button" id="select-all-bosses">Select All (Bosses-Only Mode)</button>
+        <button type="button" id="deselect-all">Deselect All</button>
+      </div>
+    </div>
+
+    <div class="selectors">
+      <div class="column" role="group" aria-labelledby="group-crests">
+        <h2 id="group-crests">Crest Powers</h2>
+        <button type="button" class="item" data-key="BUSTER" aria-pressed="false"><img decoding="async" src="icons/buster.png" alt="" aria-hidden="true"><span>Buster</span></button>
+        <button type="button" class="item" data-key="TORNADO" aria-pressed="false"><img decoding="async" src="icons/tornado.png" alt="" aria-hidden="true"><span>Tornado</span></button>
+        <button type="button" class="item" data-key="CLAW" aria-pressed="false"><img decoding="async" src="icons/claw.png" alt="" aria-hidden="true"><span>Claw</span></button>
+        <button type="button" class="item" data-key="DEMON_FIRE" aria-pressed="false"><img decoding="async" src="icons/demonfire.png" alt="" aria-hidden="true"><span>Demon Fire</span></button>
+        <button type="button" class="item" data-key="CREST_OF_EARTH" aria-pressed="false"><img decoding="async" src="icons/earth.png" alt="" aria-hidden="true"><span>Earth</span></button>
+        <button type="button" class="item" data-key="CREST_OF_AIR" aria-pressed="false"><img decoding="async" src="icons/air.png" alt="" aria-hidden="true"><span>Air</span></button>
+        <button type="button" class="item" data-key="CREST_OF_WATER" aria-pressed="false"><img decoding="async" src="icons/water.png" alt="" aria-hidden="true"><span>Water</span></button>
+        <button type="button" class="item" data-key="CREST_OF_TIME" aria-pressed="false"><img decoding="async" src="icons/time.png" alt="" aria-hidden="true"><span>Time</span></button>
+        <button type="button" class="item" data-key="CREST_OF_INFINITY" aria-pressed="false"><img decoding="async" src="icons/infinity.png" alt="" aria-hidden="true"><span>Infinity</span></button>
+      </div>
+
+      <div class="stack">
+        <div class="column" role="group" aria-labelledby="group-vellums">
+          <h2 id="group-vellums">Vellums</h2>
+          <button type="button" class="item" data-key="VELLUM_STAGE_1" aria-pressed="false"><img decoding="async" src="icons/vellum.png" alt="" aria-hidden="true"><span>Stage 1</span></button>
+          <button type="button" class="item" data-key="VELLUM_STAGE_2" aria-pressed="false"><img decoding="async" src="icons/vellum.png" alt="" aria-hidden="true"><span>Stage 2</span></button>
+          <button type="button" class="item" data-key="VELLUM_STAGE_3" aria-pressed="false"><img decoding="async" src="icons/vellum.png" alt="" aria-hidden="true"><span>Stage 3</span></button>
+          <button type="button" class="item" data-key="VELLUM_STAGE_4" aria-pressed="false"><img decoding="async" src="icons/vellum.png" alt="" aria-hidden="true"><span>Stage 4</span></button>
+          <button type="button" class="item" data-key="VELLUM_STAGE_6" aria-pressed="false"><img decoding="async" src="icons/vellum.png" alt="" aria-hidden="true"><span>Stage 6</span></button>
+        </div>
+        <div class="column" role="group" aria-labelledby="group-urns">
+          <h2 id="group-urns">Urns</h2>
+          <button type="button" class="item" data-key="URN_STAGE_1" aria-pressed="false"><img decoding="async" src="icons/urn.png" alt="" aria-hidden="true"><span>Stage 1</span></button>
+          <button type="button" class="item" data-key="URN_STAGE_2" aria-pressed="false"><img decoding="async" src="icons/urn.png" alt="" aria-hidden="true"><span>Stage 2</span></button>
+          <button type="button" class="item" data-key="URN_STAGE_3" aria-pressed="false"><img decoding="async" src="icons/urn.png" alt="" aria-hidden="true"><span>Stage 3</span></button>
+          <button type="button" class="item" data-key="URN_STAGE_4" aria-pressed="false"><img decoding="async" src="icons/urn.png" alt="" aria-hidden="true"><span>Stage 4</span></button>
+          <button type="button" class="item" data-key="URN_STAGE_6" aria-pressed="false"><img decoding="async" src="icons/urn.png" alt="" aria-hidden="true"><span>Stage 6</span></button>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="column" role="group" aria-labelledby="group-talismans">
+          <h2 id="group-talismans">Talismans</h2>
+          <button type="button" class="item" data-key="CROWN" aria-pressed="false"><img decoding="async" src="icons/crown.png" alt="" aria-hidden="true"><span>Crown</span></button>
+          <button type="button" class="item" data-key="SKULL" aria-pressed="false"><img decoding="async" src="icons/skull.png" alt="" aria-hidden="true"><span>Skull</span></button>
+          <button type="button" class="item" data-key="ARMOR" aria-pressed="false"><img decoding="async" src="icons/armor.png" alt="" aria-hidden="true"><span>Armor</span></button>
+          <button type="button" class="item" data-key="FANG" aria-pressed="false"><img decoding="async" src="icons/fang.png" alt="" aria-hidden="true"><span>Fang</span></button>
+          <button type="button" class="item" data-key="HAND" aria-pressed="false"><img decoding="async" src="icons/hand.png" alt="" aria-hidden="true"><span>Hand</span></button>
+        </div>
+        <div class="column" role="group" aria-labelledby="group-mode">
+          <h2 id="group-mode">Mode</h2>
+          <button type="button" class="item" data-key="BOSSES_ONLY_MODE" aria-pressed="false"><img decoding="async" src="icons/boss.png" alt="" aria-hidden="true"><span>Bosses-Only</span></button>
+        </div>
+      </div>
+
+      <div class="column clear-souls" role="group" aria-labelledby="group-clear-souls">
+        <h2 id="group-clear-souls">Clear Souls</h2>
+        <div class="clear-souls-grid">
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_1_SOMULO" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 1 – Somulo</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_1_HIPPOGRIFF" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 1 – Hippogriff</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_1_SHEER_PRECIPICE" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 1 – Sheer Precipice</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_2_MORTUARY_CAVE" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 2 – Mortuary Cave</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_2_CEMETERY" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 2 – Cemetery</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_2_BELTH" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 2 – Belth</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_3_BURN_SCAR" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 3 – Burn Scar</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_3_SOUL_CHAMBER" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 3 – Soul Chamber</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_3_SCULA" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 3 – Scula</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_5_TEMPLE" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 5 – Temple</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_5_EMERGENCE_CHAMBER" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 5 – Emergence Chamber</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_5_UNDERWATER_TEMPLE" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 5 – Underwater Temple</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_5_HOLOTHURION" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 5 – Holothurion</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_6_ICE_VAULT" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 6 – Ice Vault</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_STAGE_7_FIRST_BELL_TOWER" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Stage 7 – First Bell Tower</span></button>
+          <button type="button" class="item" data-key="CLEAR_SOUL_PAGO_TRIO_LEVEL_3" aria-pressed="false"><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>Pago Trio Level 3</span></button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function generatePassword(opts) {
+      const GLYPH = "BCDFGHWKXMNYQRZT";
+      const COST = [0, 1, 2, 3, 4, 5, 4, 7, 3, 9, 10, 2, 9, 8, 1, 6];
+      const DEST = [
+        [6, 4, 1, 7, 5, 2, 0, 3],
+        [7, 5, 0, 3, 1, 6, 2, 4],
+        [4, 1, 6, 0, 5, 2, 3, 7],
+        [6, 4, 2, 0, 7, 1, 3, 5],
+        [4, 6, 3, 5, 7, 0, 1, 2],
+        [2, 7, 3, 4, 6, 1, 0, 5],
+        [0, 7, 4, 2, 5, 3, 1, 6],
+        [4, 6, 2, 3, 5, 0, 7, 1],
+      ];
+
+      const base = [
+        (opts.BUSTER << 0) + (opts.TORNADO << 1) +
+        (opts.CLAW << 2) + (opts.DEMON_FIRE << 3) +
+        (opts.CREST_OF_EARTH << 4) + (opts.CREST_OF_AIR << 5) +
+        (opts.CREST_OF_WATER << 6) + (opts.CREST_OF_TIME << 7),
+
+        (opts.CREST_OF_INFINITY << 0) + (opts.VELLUM_STAGE_1 << 1) +
+        (opts.VELLUM_STAGE_2 << 2) + (opts.VELLUM_STAGE_3 << 3) +
+        (opts.VELLUM_STAGE_4 << 4) + (opts.VELLUM_STAGE_6 << 5) +
+        (opts.URN_STAGE_1 << 6) + (opts.URN_STAGE_2 << 7),
+
+        (opts.URN_STAGE_3 << 0) + (opts.URN_STAGE_4 << 1) +
+        (opts.URN_STAGE_6 << 2) + (opts.CROWN << 3) +
+        (opts.SKULL << 4) + (opts.ARMOR << 5) +
+        (opts.FANG << 6) + (opts.HAND << 7),
+
+        (opts.CLEAR_SOUL_STAGE_1_SOMULO << 0) +
+        (opts.CLEAR_SOUL_STAGE_1_HIPPOGRIFF << 1) +
+        (opts.CLEAR_SOUL_STAGE_2_BELTH << 2) +
+        (opts.CLEAR_SOUL_STAGE_3_SCULA << 3) +
+        (opts.CLEAR_SOUL_STAGE_5_EMERGENCE_CHAMBER << 4) +
+        (opts.CLEAR_SOUL_STAGE_5_HOLOTHURION << 5) +
+        (opts.CLEAR_SOUL_STAGE_1_SHEER_PRECIPICE << 6) +
+        (opts.CLEAR_SOUL_STAGE_2_MORTUARY_CAVE << 7),
+
+        (opts.CLEAR_SOUL_STAGE_2_CEMETERY << 0) +
+        (opts.CLEAR_SOUL_STAGE_3_BURN_SCAR << 1) +
+        (opts.CLEAR_SOUL_STAGE_3_SOUL_CHAMBER << 2) +
+        (opts.CLEAR_SOUL_PAGO_TRIO_LEVEL_3 << 3) +
+        (opts.CLEAR_SOUL_STAGE_5_UNDERWATER_TEMPLE << 4) +
+        (opts.CLEAR_SOUL_STAGE_5_TEMPLE << 5) +
+        (opts.CLEAR_SOUL_STAGE_6_ICE_VAULT << 6) +
+        (opts.CLEAR_SOUL_STAGE_7_FIRST_BELL_TOWER << 7),
+      ];
+
+      let best = null;
+
+      for (let unused = 0; unused < 128; unused++) {
+        const payload = base.concat([(opts.BOSSES_ONLY_MODE ? 1 : 0) + (unused << 1)]);
+        const low = payload.reduce((a, b) => a + b, 0) & 0xF;
+
+        for (let key = 1; key < 15; key++) {
+          const mixer = (key << 4) | low;
+          const src = payload.map(byte => byte ^ mixer);
+          src.push(mixer);
+          src.push(src.reduce((a, b) => a + b, 0) & 0xFF);
+
+          const order = new Array(8).fill(0);
+          for (let si = 0; si < src.length; si++) {
+            const byte = src[si];
+            for (let bit = 0; bit < 8; bit++) {
+              if (byte & (1 << bit)) {
+                order[DEST[si][bit]] |= 1 << si;
+              }
+            }
+          }
+
+          const nibbles = [];
+          for (const byte of order) {
+            nibbles.push(byte >> 4, byte & 0xF);
+          }
+
+          const pw = nibbles.map(n => GLYPH[n]).join("");
+          const xi = pw.indexOf("X");
+          const ti = pw.indexOf("T");
+          const xt = (xi !== -1 && ti !== -1 && xi < ti) ? 0 : 1;
+          const cost = nibbles.reduce((sum, n) => sum + COST[n], 0);
+          const rank = [cost, xt, pw];
+
+          if (best === null || compareRank(rank, best) < 0) {
+            best = rank;
+          }
+        }
+      }
+
+      return best[2];
+    }
+
+    function compareRank(a, b) {
+      if (a[0] !== b[0]) return a[0] - b[0];
+      if (a[1] !== b[1]) return a[1] - b[1];
+      return a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0;
+    }
+
+    const items = document.querySelectorAll(".item");
+
+    function setSelected(el, selected) {
+      el.classList.toggle("selected", selected);
+      el.setAttribute("aria-pressed", selected);
+    }
+
+    function getOptions() {
+      const opts = {};
+      items.forEach(el => {
+        opts[el.dataset.key] = el.classList.contains("selected");
+      });
+      return opts;
+    }
+
+    function setAll(selected, exceptKey) {
+      items.forEach(el => {
+        const on = exceptKey && el.dataset.key === exceptKey ? false : selected;
+        setSelected(el, on);
+      });
+    }
+
+    const passwordGrid = document.getElementById("password-grid");
+    let currentPassword = "";
+
+    const passwordAnnouncement = document.getElementById("password-announcement");
+
+    function showPassword(pw) {
+      currentPassword = pw || "";
+      if (!pw) {
+        passwordGrid.textContent = "----\n----\n----\n----";
+        passwordGrid.classList.add("placeholder");
+        passwordAnnouncement.textContent = "";
+        return;
+      }
+      passwordGrid.classList.remove("placeholder");
+      const lines = [];
+      for (let i = 0; i < 16; i += 4) {
+        lines.push(pw.slice(i, i + 4));
+      }
+      passwordGrid.textContent = lines.join("\n");
+      passwordAnnouncement.textContent = "Generated password: " + lines.join(" ");
+    }
+
+    function onToggleChange() {
+      if (currentPassword) showPassword("");
+    }
+
+    items.forEach(el => {
+      el.addEventListener("click", () => {
+        setSelected(el, !el.classList.contains("selected"));
+        onToggleChange();
+      });
+    });
+
+    document.getElementById("generate").addEventListener("click", () => {
+      showPassword(generatePassword(getOptions()));
+    });
+
+    const copyButton = document.getElementById("copy");
+    const copyLabel = copyButton.textContent;
+    let copyTimer = null;
+    const copyStatus = document.getElementById("copy-status");
+
+    function flashCopy(message) {
+      if (copyTimer) clearTimeout(copyTimer);
+      copyButton.textContent = message;
+      copyStatus.textContent = message;
+      copyTimer = setTimeout(() => {
+        copyButton.textContent = copyLabel;
+        copyStatus.textContent = "";
+        copyTimer = null;
+      }, 1500);
+    }
+
+    copyButton.addEventListener("click", () => {
+      if (!currentPassword) {
+        flashCopy("No password!");
+        return;
+      }
+      const parts = currentPassword.match(/.{1,4}/g);
+      const formatted = parts ? parts.join(" ") : currentPassword;
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        flashCopy("Failed");
+        return;
+      }
+      navigator.clipboard.writeText(formatted).then(() => {
+        flashCopy("Copied!");
+      }).catch(() => {
+        flashCopy("Failed");
+      });
+    });
+
+    document.getElementById("select-all").addEventListener("click", () => {
+      setAll(true, "BOSSES_ONLY_MODE");
+      onToggleChange();
+    });
+
+    document.getElementById("select-all-bosses").addEventListener("click", () => {
+      setAll(true);
+      onToggleChange();
+    });
+
+    document.getElementById("deselect-all").addEventListener("click", () => {
+      setAll(false);
+      onToggleChange();
+    });
+
+    showPassword("");
+  </script>
+</body>
+</html>
