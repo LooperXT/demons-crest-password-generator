@@ -1,6 +1,6 @@
 # Demon's Crest Password Generator
 
-This project provides a static web page that generates passwords for Demon's Crest (SNES). The web page is designed to support screen readers and high-contrast displays.
+This project provides a static [web page](https://looperxt.github.io/demons-crest-password-generator/) that generates passwords for Demon's Crest (SNES). The web page is designed to support screen readers and high-contrast displays.
 
 ## Usage
 
