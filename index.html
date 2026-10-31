@@ -113,7 +113,7 @@
 
     #generate,
     #copy {
-      min-width: 8em;
+      min-width: 9em;
     }
 
     #select-all,
@@ -133,6 +133,29 @@
 
     button:active {
       background: var(--active-bg);
+    }
+
+    .rules {
+      max-width: 20rem;
+      margin: var(--space-2) auto var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg);
+      border: none;
+    }
+
+    .rules p {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin: var(--space-1) 0;
+      font-size: 0.85rem;
+    }
+
+    .rules img {
+      width: 20px;
+      height: 20px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
     }
 
     .selectors {
@@ -275,6 +298,7 @@
 
     @media (forced-colors: active) {
       .column,
+      .rules,
       button,
       .item {
         border-color: CanvasText;
@@ -313,6 +337,7 @@
       <div id="password-announcement" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
     </div>
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
+    <div id="generate-status" class="visually-hidden" role="status" aria-live="polite"></div>
 
     <div class="controls">
       <div class="control-row">
@@ -324,6 +349,12 @@
         <button type="button" id="select-all-bosses">Select All (Bosses-Only Mode)</button>
         <button type="button" id="deselect-all">Deselect All</button>
       </div>
+    </div>
+
+    <div class="rules" role="note" aria-labelledby="rules-heading">
+      <h2 id="rules-heading" class="visually-hidden">Password rules</h2>
+      <p><img decoding="async" src="icons/clearsoul.png" alt="" aria-hidden="true"><span>All key items require Somulo's Clear Soul.</span></p>
+      <p><img decoding="async" src="icons/infinity.png" alt="" aria-hidden="true"><span>Infinity requires all other key items.</span></p>
     </div>
 
     <div class="selectors">
@@ -519,6 +550,66 @@
       });
     }
 
+    const KEY_ITEMS = [
+      "BUSTER", "TORNADO", "CLAW", "DEMON_FIRE",
+      "CREST_OF_EARTH", "CREST_OF_AIR", "CREST_OF_WATER", "CREST_OF_TIME",
+      "CREST_OF_INFINITY",
+      "VELLUM_STAGE_1", "VELLUM_STAGE_2", "VELLUM_STAGE_3", "VELLUM_STAGE_4", "VELLUM_STAGE_6",
+      "URN_STAGE_1", "URN_STAGE_2", "URN_STAGE_3", "URN_STAGE_4", "URN_STAGE_6",
+      "CROWN", "SKULL", "ARMOR", "FANG", "HAND",
+      "CLEAR_SOUL_STAGE_1_SOMULO", "CLEAR_SOUL_STAGE_1_HIPPOGRIFF", "CLEAR_SOUL_STAGE_1_SHEER_PRECIPICE",
+      "CLEAR_SOUL_STAGE_2_MORTUARY_CAVE", "CLEAR_SOUL_STAGE_2_CEMETERY", "CLEAR_SOUL_STAGE_2_BELTH",
+      "CLEAR_SOUL_STAGE_3_BURN_SCAR", "CLEAR_SOUL_STAGE_3_SOUL_CHAMBER", "CLEAR_SOUL_STAGE_3_SCULA",
+      "CLEAR_SOUL_STAGE_5_TEMPLE", "CLEAR_SOUL_STAGE_5_EMERGENCE_CHAMBER",
+      "CLEAR_SOUL_STAGE_5_UNDERWATER_TEMPLE", "CLEAR_SOUL_STAGE_5_HOLOTHURION",
+      "CLEAR_SOUL_STAGE_6_ICE_VAULT", "CLEAR_SOUL_STAGE_7_FIRST_BELL_TOWER",
+      "CLEAR_SOUL_PAGO_TRIO_LEVEL_3"
+    ];
+
+    const itemByKey = {};
+    items.forEach(el => { itemByKey[el.dataset.key] = el; });
+
+    function setKey(key, selected) {
+      const el = itemByKey[key];
+      if (el) setSelected(el, selected);
+    }
+
+    function isOn(key) {
+      const el = itemByKey[key];
+      return !!(el && el.classList.contains("selected"));
+    }
+
+    function applyItemRules(changedKey, turnedOn) {
+      if (changedKey === "BOSSES_ONLY_MODE") return;
+
+      if (changedKey === "CREST_OF_INFINITY" && turnedOn) {
+        KEY_ITEMS.forEach(key => setKey(key, true));
+        return;
+      }
+
+      if (changedKey === "CLEAR_SOUL_STAGE_1_SOMULO" && !turnedOn) {
+        KEY_ITEMS.forEach(key => setKey(key, false));
+        return;
+      }
+
+      if (changedKey !== "CREST_OF_INFINITY" && !turnedOn && isOn("CREST_OF_INFINITY")) {
+        setKey("CREST_OF_INFINITY", false);
+      }
+
+      if (changedKey !== "CLEAR_SOUL_STAGE_1_SOMULO" && turnedOn && !isOn("CLEAR_SOUL_STAGE_1_SOMULO")) {
+        setKey("CLEAR_SOUL_STAGE_1_SOMULO", true);
+      }
+    }
+
+    function isLegal(opts) {
+      const somulo = !!opts.CLEAR_SOUL_STAGE_1_SOMULO;
+      const infinity = !!opts.CREST_OF_INFINITY;
+      const anyOther = KEY_ITEMS.some(key => key !== "CLEAR_SOUL_STAGE_1_SOMULO" && opts[key]);
+      if (!somulo && anyOther) return false;
+      if (infinity && !KEY_ITEMS.every(key => opts[key])) return false;
+      return true;
+    }
+
     const passwordGrid = document.getElementById("password-grid");
     let currentPassword = "";
 
@@ -547,13 +638,37 @@
 
     items.forEach(el => {
       el.addEventListener("click", () => {
-        setSelected(el, !el.classList.contains("selected"));
+        const next = !el.classList.contains("selected");
+        setSelected(el, next);
+        applyItemRules(el.dataset.key, next);
         onToggleChange();
       });
     });
 
-    document.getElementById("generate").addEventListener("click", () => {
-      showPassword(generatePassword(getOptions()));
+    const generateButton = document.getElementById("generate");
+    const generateLabel = generateButton.textContent;
+    let generateTimer = null;
+    const generateStatus = document.getElementById("generate-status");
+
+    function flashGenerate(message) {
+      if (generateTimer) clearTimeout(generateTimer);
+      generateButton.textContent = message;
+      generateStatus.textContent = message;
+      generateTimer = setTimeout(() => {
+        generateButton.textContent = generateLabel;
+        generateStatus.textContent = "";
+        generateTimer = null;
+      }, 1500);
+    }
+
+    generateButton.addEventListener("click", () => {
+      const opts = getOptions();
+      if (!isLegal(opts)) {
+        showPassword("");
+        flashGenerate("Error!");
+        return;
+      }
+      showPassword(generatePassword(opts));
     });
 
     const copyButton = document.getElementById("copy");
